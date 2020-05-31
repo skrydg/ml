@@ -1,1 +1,4 @@
 *.ipynb_checkpoints/
+*.zip
+/cat_dog_recognition/test/
+/cat_dog_recognition/train/
