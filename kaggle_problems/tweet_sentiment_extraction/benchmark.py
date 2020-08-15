@@ -75,13 +75,13 @@ test = test[~test['text'].isnull()]
 sentence_converter = Converter(tokenizer_type=TokenizerType.tweet_tokenizer)
 
 
-# In[10]:
+# In[25]:
 
 
 def preprocessing(data):
     data = data[~data.isnull()]
     sentence_converter.clear_statistic()
-    vectors, cleared_sentences = sentence_converter.convert_sentences(data.iloc)
+    vectors, cleared_sentences = sentence_converter.convert_sentences(data)
     
     unknown_words = np.sum([i for i in sentence_converter.unknown_words.values() if i is not None])
     known_words = np.sum([i for i in sentence_converter.known_words.values()if i is not None])
@@ -181,7 +181,7 @@ for index, row in train.iterrows():
 print(cnt_true, cnt_false)
 
 
-# In[23]:
+# In[26]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/tweet_sentiment_extraction/benchmark.ipynb')
