@@ -100,7 +100,12 @@ def preprocessing(data):
 # In[11]:
 
 
-get_ipython().run_cell_magic('time', '', "vectors, test_cleared_sentences, test_unknown_words, test_known_words = preprocessing(test['text'])\npickle.dump(vectors, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test.pkl', 'wb'))\npickle.dump(test_cleared_sentences, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_cleared_sentences.pkl', 'wb'))\n\npickle.dump(test_unknown_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_unknown_words.pkl', 'wb'))\npickle.dump(test_known_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_known_words.pkl', 'wb'))\n")
+vectors, test_cleared_sentences, test_unknown_words, test_known_words = preprocessing(test['text'])
+pickle.dump(vectors, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test.pkl', 'wb'))
+pickle.dump(test_cleared_sentences, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_cleared_sentences.pkl', 'wb'))
+
+pickle.dump(test_unknown_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_unknown_words.pkl', 'wb'))
+pickle.dump(test_known_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_known_words.pkl', 'wb'))
 
 
 # In[12]:
@@ -176,7 +181,7 @@ for index, row in train.iterrows():
 print(cnt_true, cnt_false)
 
 
-# In[21]:
+# In[23]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/tweet_sentiment_extraction/benchmark.ipynb')
