@@ -3,3 +3,4 @@
 /cat_dog_recognition/test/
 /cat_dog_recognition/train/
 *.csv
+helpers/word2vec/GoogleNews-vectors-negative300.bin
