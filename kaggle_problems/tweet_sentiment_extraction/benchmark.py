@@ -29,6 +29,7 @@ from helpers.word2vec.converter import *
 
 MAX_SENTENCE_LEN = 50
 WORD_REPRESENTATION_LEN = 300
+DUMP_BATCH_SIZE = 5000
 
 
 # #### Считывание данных
@@ -69,17 +70,16 @@ train = train[~train['text'].isnull()]
 test = test[~test['text'].isnull()]
 
 
-# In[11]:
+# In[9]:
 
 
 sentence_converter = Converter(tokenizer_type=TokenizerType.tweet_tokenizer)
 
 
-# In[18]:
+# In[10]:
 
 
 def preprocessing(data):
-    data = data[~data.isnull()]
     sentence_converter.clear_statistic()
     vectors, cleared_sentences = sentence_converter.convert_sentences(data)
     
@@ -97,40 +97,46 @@ def preprocessing(data):
     ] for sentence in vectors], dtype=np.float16), cleared_sentences, sentence_converter.unknown_words, sentence_converter.known_words
 
 
-# In[17]:
+# In[11]:
 
 
-vectors, test_cleared_sentences, test_unknown_words, test_known_words = preprocessing(test['text'])
-pickle.dump(vectors, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test.pkl', 'wb'))
-pickle.dump(test_cleared_sentences, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_cleared_sentences.pkl', 'wb'))
+for i in range(0, (test.shape[0] + DUMP_BATCH_SIZE - 1) // DUMP_BATCH_SIZE):
+    vectors, test_cleared_sentences, test_unknown_words, test_known_words =         preprocessing(test['text'].iloc[i * DUMP_BATCH_SIZE: (i + 1) * DUMP_BATCH_SIZE])
+    
+    pickle.dump(vectors, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_{}.pkl'.format(i), 'wb'))
+    pickle.dump(test_cleared_sentences, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_cleared_sentences_{}.pkl'.format(i), 'wb'))
 
-pickle.dump(test_unknown_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_unknown_words.pkl', 'wb'))
-pickle.dump(test_known_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_known_words.pkl', 'wb'))
-
-
-# In[12]:
-
-
-vectors, train_cleared_sentences, train_unknown_words, train_known_words = preprocessing(train['text'])
-pickle.dump(vectors, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/train.pkl', 'wb'))
-pickle.dump(train_cleared_sentences, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/train_cleared_sentences.pkl', 'wb'))
-
-pickle.dump(train_unknown_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/train_unknown_words.pkl', 'wb'))
-pickle.dump(train_known_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/train_known_words.pkl', 'wb'))
+    pickle.dump(test_unknown_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_unknown_words_{}.pkl'.format(i), 'wb'))
+    pickle.dump(test_known_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/test_known_words_{}.pkl'.format(i), 'wb'))
 
 
-# In[13]:
+# In[ ]:
 
 
-vectors, train_cleared_sentences, train_unknown_words, train_known_words = preprocessing(train['selected_text'])
-pickle.dump(vectors, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/selected_train.pkl', 'wb'))
-pickle.dump(train_cleared_sentences, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/selected_train_cleared_sentences.pkl', 'wb'))
+for i in range(0, (train.shape[0] + DUMP_BATCH_SIZE - 1) // DUMP_BATCH_SIZE):
+    vectors, train_cleared_sentences, train_unknown_words, train_known_words =         preprocessing(train['text'].iloc[i * DUMP_BATCH_SIZE: (i + 1) * DUMP_BATCH_SIZE])
+        
+    pickle.dump(vectors, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/train_{}.pkl'.format(i), 'wb'))
+    pickle.dump(train_cleared_sentences, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/train_cleared_sentences_{}.pkl'.format(i), 'wb'))
 
-pickle.dump(train_unknown_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/selected_train_unknown_words.pkl.pkl', 'wb'))
-pickle.dump(train_known_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/selected_train_known_words.pkl', 'wb'))
+    pickle.dump(train_unknown_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/train_unknown_words_{}.pkl'.format(i), 'wb'))
+    pickle.dump(train_known_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/train_known_words_{}.pkl'.format(i), 'wb'))
 
 
-# In[14]:
+# In[ ]:
+
+
+for i in range(0, (train.shape[0] + DUMP_BATCH_SIZE - 1) // DUMP_BATCH_SIZE):
+    vectors, train_cleared_sentences, train_unknown_words, train_known_words =         preprocessing(train['selected_text'].iloc[i * DUMP_BATCH_SIZE: (i + 1) * DUMP_BATCH_SIZE])
+        
+    pickle.dump(vectors, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/selected_train_{}.pkl'.format(i), 'wb'))
+    pickle.dump(train_cleared_sentences, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/selected_train_cleared_sentences_{}.pkl'.format(i), 'wb'))
+
+    pickle.dump(train_unknown_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/selected_train_unknown_words_{}.pkl'.format(i), 'wb'))
+    pickle.dump(train_known_words, open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/selected_train_known_words_{}.pkl'.format(i), 'wb'))
+
+
+# In[ ]:
 
 
 train_known_words = pickle.load(open('kaggle_problems/tweet_sentiment_extraction/pickle_dump/train_known_words', 'rb'))
@@ -142,19 +148,19 @@ train_known_words = pickle.load(open('kaggle_problems/tweet_sentiment_extraction
 
 
 
-# In[15]:
+# In[ ]:
 
 
 sorted(train_unknown_words.items(), key=lambda x : x[1], reverse=True)
 
 
-# In[16]:
+# In[ ]:
 
 
 sorted(sentence_converter.unknown_words.items(), key=lambda x : x[1], reverse=True)
 
 
-# In[17]:
+# In[ ]:
 
 
 unknown_words = np.sum([i for i in sentence_converter.unknown_words.values()])
@@ -164,7 +170,7 @@ print(unknown_words / (unknown_words + known_words))
 
 # #### Проверка гипотезы
 
-# In[18]:
+# In[ ]:
 
 
 #
@@ -181,13 +187,13 @@ for index, row in train.iterrows():
 print(cnt_true, cnt_false)
 
 
-# In[19]:
+# In[12]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/tweet_sentiment_extraction/benchmark.ipynb')
 
 
-# In[20]:
+# In[ ]:
 
 
 # MAX_WORDS = 35
