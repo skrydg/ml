@@ -29,6 +29,10 @@ pip3 install pandas
 pip3 install ortools
 pip3 install pulp
 
+sudo pip3 install nlp
+sudo pip install -U spacy
+python3 -m spacy download en
+
 # install jupiter notebook
 pip install jupyterlab
 
