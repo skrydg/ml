@@ -6,9 +6,16 @@ from spacy.util import minibatch
 from tqdm import tqdm
 
 from pathlib import Path
+from sklearn.model_selection import train_test_split
 
 class NER:
-    def __init__(self):
+    #
+    #
+    # evaluate_score = function(texts, y_true, y_predict)
+    #
+    #
+    def __init__(self, evaluate_score = None):
+        self.evaluate_score = evaluate_score
         self.new_model = True
         self.nlp = spacy.blank("en")  # create blank Language class
         print("Created blank 'en' model")
@@ -35,7 +42,7 @@ class NER:
     #       }
     #  ), ...]
     #
-    def train(self, train_data, n_iter=20, drop=0.5):
+    def train(self, train_data, n_iter=20, drop=0.5, validation_size=0.1):
         # create the built-in pipeline components and add them to the pipeline
         # nlp.create_pipe works for built-ins that are registered with spaCy
         if "ner" not in self.nlp.pipe_names:
@@ -50,6 +57,10 @@ class NER:
             for ent in annotations.get("entities"):
                 ner.add_label(ent[2])
 
+        train_los = []
+        validation_los = []
+
+        train, validation = train_test_split(train_data, test_size=validation_size, shuffle=True)
         # get names of other pipes to disable them during training
         other_pipes = [pipe for pipe in self.nlp.pipe_names if pipe != "ner"]
         with self.nlp.disable_pipes(*other_pipes):  # only train NER
@@ -61,19 +72,32 @@ class NER:
                 self.nlp.resume_training()
 
             for itn in tqdm(range(n_iter)):
-                random.shuffle(train_data)
-                batches = minibatch(train_data, size=compounding(4.0, 500.0, 1.001))
-                losses = {}
+                random.shuffle(train)
+                batches = minibatch(train, size=compounding(4.0, 500.0, 1.001))
+                los = {}
                 for batch in batches:
                     texts, annotations = zip(*batch)
                     self.nlp.update(
                         texts,  # batch of texts
                         annotations,  # batch of annotations
                         drop=drop,  # dropout - make it harder to memorise data
-                        losses=losses,
+                        losses=los,
                     )
 
-                print("Losses", losses)
+
+
+                if self.evaluate_score is not None:
+                    texts, annotations = zip(*train)
+                    annotations = [annotation.get('entities') for annotation in annotations]
+                    y_predict = self.predict(texts)
+                    train_los.append(self.evaluate_score(texts, annotations, y_predict))
+
+                    texts, annotations = zip(*validation)
+                    annotations = [annotation.get('entities') for annotation in annotations]
+                    y_predict = self.predict(texts)
+                    validation_los.append(self.evaluate_score(texts, annotations, y_predict))
+
+        return train_los, validation_los
 
     def predict(self, texts):
         res = []
@@ -89,3 +113,4 @@ class NER:
 
             res.append(ent_array)
         return res
+
