@@ -140,8 +140,8 @@ def df_to_spacy_format(data):
             line['text'], 
             {"entities": [(start_word, end_word, MAIN_PART_LABEL)]}
         )
-        nlp = English()
-        tokens = nlp(line['text'])
+#         nlp = English()
+#         tokens = nlp(line['text'])
 
 #         print([t.text for t in tokens])
 #         print(line['text'])
@@ -238,7 +238,7 @@ result_df = result_df.set_index('textID')
 result_df.to_csv('kaggle_problems/tweet_sentiment_extraction/submissions/{}'.format('baseline_ner'))
 
 
-# In[294]:
+# In[296]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/tweet_sentiment_extraction/baseline.ipynb')
