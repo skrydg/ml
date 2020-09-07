@@ -74,3 +74,18 @@ class NER:
                     )
 
                 print("Losses", losses)
+
+    def predict(self, texts):
+        res = []
+        for text in texts:
+            doc = self.nlp(text)
+            ent_array = []
+            for ent in doc.ents:
+                start = text.find(ent.text)
+                end = start + len(ent.text)
+                new_int = [start, end, ent.label_]
+                if new_int not in ent_array:
+                    ent_array.append([start, end, ent.label_])
+
+            res.append(ent_array)
+        return res
