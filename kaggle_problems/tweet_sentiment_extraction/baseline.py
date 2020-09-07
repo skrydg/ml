@@ -126,7 +126,7 @@ def get_start_end_char(x):
     return start_char, end_char
 
 
-# In[290]:
+# In[292]:
 
 
 def df_to_spacy_format(data):
@@ -150,12 +150,6 @@ def df_to_spacy_format(data):
 #         print(spacy.gold.biluo_tags_from_offsets(nlp.make_doc(line['text']), [(start_word, end_word, MAIN_PART_LABEL)]))
 #         print("-" * 100)
     return spacy_data
-
-
-# In[ ]:
-
-
-df_to_spacy_format(train[train['sentiment'] == sentiment])
 
 
 # ### Training
@@ -244,7 +238,7 @@ result_df = result_df.set_index('textID')
 result_df.to_csv('kaggle_problems/tweet_sentiment_extraction/submissions/{}'.format('baseline_ner'))
 
 
-# In[229]:
+# In[294]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/tweet_sentiment_extraction/baseline.ipynb')
