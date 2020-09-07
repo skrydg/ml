@@ -162,7 +162,7 @@ for sentiment in ['positive', 'negative', 'neutral']:
     print("-" * 100)
     model = NER()
     spacy_train_pos = df_to_spacy_format(train[train['sentiment'] == sentiment])
-    model.train(spacy_train_pos, n_iter=30)
+    model.train(spacy_train_pos, n_iter=100)
     model.save_model('kaggle_problems/tweet_sentiment_extraction/models/ner_{}'.format(sentiment))
     print("-" * 100)
 
