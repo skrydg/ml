@@ -157,8 +157,6 @@ def df_to_spacy_format(data):
 # In[228]:
 
 
-
-
 for sentiment in ['positive', 'negative', 'neutral']:
     print("Training for {}".format(sentiment))
     print("-" * 100)
