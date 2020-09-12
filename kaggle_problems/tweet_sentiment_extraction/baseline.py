@@ -103,6 +103,19 @@ train = preprocessing(train)
 test = preprocessing(test)
 
 
+# ### Prediction
+
+# In[15]:
+
+
+def predict(model, data):
+    texts = data.text.to_numpy()
+    
+    result = model.predict(texts)
+    predict_selected_texts = get_selected_text(texts, result)
+    return predict_selected_texts
+
+
 # ### Гипотеза что расстояние джакара между selected_texts and texts маленькое для text_cnt_words < X
 
 # In[73]:
@@ -257,19 +270,6 @@ plt.show()
 print(train_los, validation_los)
 
 
-# ### Prediction
-
-# In[15]:
-
-
-def predict(model, data):
-    texts = data.text.to_numpy()
-    
-    result = model.predict(texts)
-    predict_selected_texts = get_selected_text(texts, result)
-    return predict_selected_texts
-
-
 # ### Predict on train
 
 # In[16]:
@@ -322,7 +322,7 @@ result_df = result_df.set_index('textID')
 result_df.to_csv('kaggle_problems/tweet_sentiment_extraction/submissions/{}'.format('baseline_ner'))
 
 
-# In[78]:
+# In[79]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/tweet_sentiment_extraction/baseline.ipynb')
