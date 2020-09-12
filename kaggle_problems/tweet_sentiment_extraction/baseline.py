@@ -230,8 +230,8 @@ for sentiment in ['positive', 'negative', 'neutral']:
     print("Training for {}".format(sentiment))
     print("-" * 100)
     model = NER(evaluate_score=evaluate_score)
-    spacy_train_pos = df_to_spacy_format(train[train['sentiment'] == sentiment][0:10])
-    train_los, validation_los = model.train(spacy_train_pos, n_iter=10)
+    spacy_train_pos = df_to_spacy_format(train[train['sentiment'] == sentiment])
+    train_los, validation_los = model.train(spacy_train_pos, n_iter=30)
     model.save_model('kaggle_problems/tweet_sentiment_extraction/models/ner_{}'.format(sentiment))
     pickle.dump(train_los, open("kaggle_problems/tweet_sentiment_extraction/data/baseline/train_los.pkl", 'wb'))
     pickle.dump(validation_los, open("kaggle_problems/tweet_sentiment_extraction/data/baseline/validation_los.pkl", 'wb'))
@@ -322,7 +322,7 @@ result_df = result_df.set_index('textID')
 result_df.to_csv('kaggle_problems/tweet_sentiment_extraction/submissions/{}'.format('baseline_ner'))
 
 
-# In[297]:
+# In[78]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/tweet_sentiment_extraction/baseline.ipynb')
