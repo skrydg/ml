@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[6]:
+# In[81]:
 
 
 import os
@@ -11,7 +11,7 @@ while not os.getcwd().endswith('ml'):
 sys.path.insert(0, os.getcwd())
 
 
-# In[7]:
+# In[83]:
 
 
 import pandas as pd
@@ -24,42 +24,19 @@ import random
 from collections import defaultdict
 from spacy.util import minibatch, compounding
 from spacy.lang.en import English
-
+from kaggle_problems.tweet_sentiment_extraction.common import *
 
 from libs.nlp.ner.ner import NER
 from helpers.word2vec.converter import *
 
 
-# In[8]:
+# In[84]:
 
 
 MAIN_PART_LABEL = 'MAIN_PART_LABEL'
 
 
-# In[9]:
-
-
-def df_jaccard(data):
-    return jaccard(data['text'], data['selected_text'])
-
-def jaccard(str1, str2): 
-    a = set(str1.lower().split()) 
-    b = set(str2.lower().split())
-    c = a.intersection(b)
-    if (len(a) + len(b) == 0):
-        return 0
-    return float(len(c)) / (len(a) + len(b) - len(c))
-
-def arr_jaccard(arr1, arr2):
-    assert(len(arr1) == len(arr2))
-    res = 0
-    for str1, str2 in zip(arr1, arr2):
-        res += jaccard(str1, str2)
-        
-    return res / len(arr1)
-
-
-# In[10]:
+# In[85]:
 
 
 train = pd.read_csv("kaggle_problems/tweet_sentiment_extraction/train.csv")
@@ -71,7 +48,7 @@ test.dropna(inplace=True)
 test.reset_index(drop=True, inplace=True)
 
 
-# In[54]:
+# In[86]:
 
 
 def preprocessing_column(column):
@@ -96,29 +73,16 @@ def preprocessing(data):
     return data
 
 
-# In[55]:
+# In[87]:
 
 
 train = preprocessing(train)
 test = preprocessing(test)
 
 
-# ### Prediction
-
-# In[15]:
-
-
-def predict(model, data):
-    texts = data.text.to_numpy()
-    
-    result = model.predict(texts)
-    predict_selected_texts = get_selected_text(texts, result)
-    return predict_selected_texts
-
-
 # ### Гипотеза что расстояние джакара между selected_texts and texts маленькое для text_cnt_words < X
 
-# In[73]:
+# In[88]:
 
 
 jacard_dist = defaultdict(list)
@@ -135,7 +99,7 @@ plt.legend()
 plt.show()
 
 
-# In[75]:
+# In[89]:
 
 
 jacard_dist = defaultdict(list)
@@ -157,36 +121,7 @@ plt.legend()
 plt.show()
 
 
-# In[13]:
-
-
-def tokenize(s):
-    return s.split(' ')
-
-def get_start_end_words(x):
-    start_char = x['text'].find(x['selected_text'])
-    start_word = len(tokenize(x['text'][:start_char + 1])) - 1
-    
-    cnt_word = len(tokenize(x['selected_text']))
-    return start_word, start_word + cnt_word
-
-def get_start_end_char(x):
-    start_char = x['text'].find(x['selected_text'])
-    end_char = start_char + len(x['selected_text'])
-    
-    start_char = x['text'][:start_char].rfind(' ') + 1
-    if start_char < 0:
-        start_char = 0
-        
-    first_space = x['text'][end_char:].find(' ')
-    if first_space < 0:
-        end_char = len(x['text'])
-    else:
-        end_char = end_char + first_space
-    return start_char, end_char
-
-
-# In[14]:
+# In[90]:
 
 
 def df_to_spacy_format(data):
@@ -212,31 +147,9 @@ def df_to_spacy_format(data):
     return spacy_data
 
 
-# In[34]:
-
-
-def get_selected_text(texts, y):
-    predict_selected_texts = []
-    for ent, text in zip(y, texts):
-        if (len(ent)):
-            start = ent[0][0]
-            end = ent[0][1]
-        else:
-            start = 0
-            end = len(text)
-        predict_selected_texts.append(text[start:end])
-    return predict_selected_texts
-        
-def evaluate_score(texts, y_true, y_predict):
-    selected_texts = get_selected_text(texts, y_true)
-    predicted_selected_texts = get_selected_text(texts, y_predict)
-        
-    return arr_jaccard(selected_texts, predicted_selected_texts)
-
-
 # ### Training
 
-# In[47]:
+# In[91]:
 
 
 for sentiment in ['positive', 'negative', 'neutral']:
@@ -252,7 +165,7 @@ for sentiment in ['positive', 'negative', 'neutral']:
     print("-" * 100)
 
 
-# In[48]:
+# In[ ]:
 
 
 train_los = pickle.load(open("kaggle_problems/tweet_sentiment_extraction/data/baseline/train_los.pkl", 'rb'))
@@ -264,7 +177,7 @@ plt.legend()
 plt.show()
 
 
-# In[37]:
+# In[ ]:
 
 
 print(train_los, validation_los)
@@ -272,7 +185,7 @@ print(train_los, validation_los)
 
 # ### Predict on train
 
-# In[16]:
+# In[ ]:
 
 
 prediction = {}
@@ -288,7 +201,7 @@ for sentiment in ['positive', 'negative']:
 
 # ### Predict on test
 
-# In[12]:
+# In[ ]:
 
 
 result_df = pd.DataFrame(columns=['textID', 'selected_text'])
@@ -316,16 +229,22 @@ result_df = result_df.append(
 result_df = result_df.set_index('textID')
 
 
-# In[13]:
+# In[ ]:
 
 
 result_df.to_csv('kaggle_problems/tweet_sentiment_extraction/submissions/{}'.format('baseline_ner'))
 
 
-# In[79]:
+# In[ ]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/tweet_sentiment_extraction/baseline.ipynb')
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
