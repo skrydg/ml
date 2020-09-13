@@ -1,0 +1,2 @@
+Как обучить ner: libs/nlp/ner/ner.py (Используется spacy)
+Статья с кегла: https://www.kaggle.com/tanulsingh077/twitter-sentiment-extaction-analysis-eda-and-model
