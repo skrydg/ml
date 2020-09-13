@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[81]:
+# In[1]:
 
 
 import os
@@ -11,7 +11,7 @@ while not os.getcwd().endswith('ml'):
 sys.path.insert(0, os.getcwd())
 
 
-# In[83]:
+# In[2]:
 
 
 import pandas as pd
@@ -30,13 +30,13 @@ from libs.nlp.ner.ner import NER
 from helpers.word2vec.converter import *
 
 
-# In[84]:
+# In[3]:
 
 
 MAIN_PART_LABEL = 'MAIN_PART_LABEL'
 
 
-# In[85]:
+# In[4]:
 
 
 train = pd.read_csv("kaggle_problems/tweet_sentiment_extraction/train.csv")
@@ -47,8 +47,10 @@ train.reset_index(drop=True, inplace=True)
 test.dropna(inplace=True)
 test.reset_index(drop=True, inplace=True)
 
+tokenize_nlp = English()
 
-# In[86]:
+
+# In[5]:
 
 
 def preprocessing_column(column):
@@ -62,27 +64,56 @@ def preprocessing_column(column):
 
 def preprocessing(data):
     data.text = preprocessing_column(data.text)
-    data['text_words'] = data['text'].apply(lambda x: x.split(" "))
-    data['text_cnt_words'] = data['text'].apply(lambda x: len(x.split(" ")))
+    data['text_words'] = data['text'].apply(lambda x: list([str(i) for i in tokenize_nlp(x)]))
+    data['text_cnt_words'] = data['text'].apply(lambda x: len(list(tokenize_nlp(x))))
     
     if 'selected_text' in data.columns:
         data.selected_text = preprocessing_column(data.selected_text)
-        data['selected_text_words'] = data['selected_text'].apply(lambda x: x.split(" "))
-        data['selected_text_cnt_words'] = data['selected_text'].apply(lambda x: len(x.split(" ")))
+        data['selected_text_words'] = data['selected_text'].apply(lambda x: list([str(i) for i in tokenize_nlp(x)]))
+        data['selected_text_cnt_words'] = data['selected_text'].apply(lambda x: len(list(tokenize_nlp(x))))
     
     return data
 
 
-# In[87]:
+# In[6]:
 
 
 train = preprocessing(train)
 test = preprocessing(test)
 
 
+# In[8]:
+
+
+train.sample(1)
+
+
+# In[9]:
+
+
+def is_subarray(text, selected_text):
+    for i in range(len(text) - len(selected_text) + 1):
+        
+        if text[i: i + len(selected_text)] == selected_text:
+            return True
+    return False
+
+
+# In[10]:
+
+
+train['is_subarray'] = train.apply(lambda x: is_subarray(x.text_words, x.selected_text_words), axis=1)
+
+
+# In[11]:
+
+
+train.is_subarray.describe()
+
+
 # ### Гипотеза что расстояние джакара между selected_texts and texts маленькое для text_cnt_words < X
 
-# In[88]:
+# In[12]:
 
 
 jacard_dist = defaultdict(list)
@@ -99,7 +130,7 @@ plt.legend()
 plt.show()
 
 
-# In[89]:
+# In[13]:
 
 
 jacard_dist = defaultdict(list)
@@ -121,7 +152,7 @@ plt.legend()
 plt.show()
 
 
-# In[90]:
+# In[14]:
 
 
 def df_to_spacy_format(data):
@@ -135,13 +166,14 @@ def df_to_spacy_format(data):
             line['text'], 
             {"entities": [(start_word, end_word, MAIN_PART_LABEL)]}
         )
+        
 #         nlp = English()
 #         tokens = nlp(line['text'])
-
 #         print([t.text for t in tokens])
 #         print(line['text'])
 #         print(start_word, end_word)
 #         print(line['selected_text'])
+#         print([t.text for t in tokens][start_word: end_word])
 #         print(spacy.gold.biluo_tags_from_offsets(nlp.make_doc(line['text']), [(start_word, end_word, MAIN_PART_LABEL)]))
 #         print("-" * 100)
     return spacy_data
@@ -149,7 +181,7 @@ def df_to_spacy_format(data):
 
 # ### Training
 
-# In[91]:
+# In[15]:
 
 
 for sentiment in ['positive', 'negative', 'neutral']:
@@ -165,7 +197,19 @@ for sentiment in ['positive', 'negative', 'neutral']:
     print("-" * 100)
 
 
-# In[ ]:
+# In[16]:
+
+
+list(train[train['sentiment'] == 'positive'].iloc[9].text_words)
+
+
+# In[17]:
+
+
+is_subarray(train[train['sentiment'] == 'positive'].iloc[9].text_words, train[train['sentiment'] == 'positive'].iloc[9].selected_text_words)
+
+
+# In[18]:
 
 
 train_los = pickle.load(open("kaggle_problems/tweet_sentiment_extraction/data/baseline/train_los.pkl", 'rb'))
@@ -177,7 +221,7 @@ plt.legend()
 plt.show()
 
 
-# In[ ]:
+# In[19]:
 
 
 print(train_los, validation_los)
@@ -185,7 +229,7 @@ print(train_los, validation_los)
 
 # ### Predict on train
 
-# In[ ]:
+# In[20]:
 
 
 prediction = {}
@@ -201,7 +245,7 @@ for sentiment in ['positive', 'negative']:
 
 # ### Predict on test
 
-# In[ ]:
+# In[21]:
 
 
 result_df = pd.DataFrame(columns=['textID', 'selected_text'])
@@ -229,7 +273,7 @@ result_df = result_df.append(
 result_df = result_df.set_index('textID')
 
 
-# In[ ]:
+# In[22]:
 
 
 result_df.to_csv('kaggle_problems/tweet_sentiment_extraction/submissions/{}'.format('baseline_ner'))

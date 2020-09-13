@@ -12,16 +12,15 @@ def jaccard(str1, str2):
 
 
 def arr_jaccard(arr1, arr2):
+    if len(arr1) == 0:
+        return 1
+
     assert (len(arr1) == len(arr2))
     res = 0
     for str1, str2 in zip(arr1, arr2):
         res += jaccard(str1, str2)
 
     return res / len(arr1)
-
-
-def tokenize(s):
-    return s.split(' ')
 
 
 def get_start_end_words(x):
@@ -35,16 +34,16 @@ def get_start_end_words(x):
 def get_start_end_char(x):
     start_char = x['text'].find(x['selected_text'])
     end_char = start_char + len(x['selected_text'])
+    if not x['is_subarray']:
+        start_char = x['text'][:start_char].rfind(' ') + 1
+        if start_char < 0:
+            start_char = 0
 
-    start_char = x['text'][:start_char].rfind(' ') + 1
-    if start_char < 0:
-        start_char = 0
-
-    first_space = x['text'][end_char:].find(' ')
-    if first_space < 0:
-        end_char = len(x['text'])
-    else:
-        end_char = end_char + first_space
+        first_space = x['text'][end_char:].find(' ')
+        if first_space < 0:
+            end_char = len(x['text'])
+        else:
+            end_char = end_char + first_space
     return start_char, end_char
 
 ### NER
