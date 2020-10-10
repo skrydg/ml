@@ -28,6 +28,9 @@ pip3 install sklearn
 pip3 install pandas
 pip3 install ortools
 pip3 install pulp
+pip3 install torch
+pip3 install albumentations
+pip3 install torchvision
 
 sudo pip3 install nlp
 sudo pip install -U spacy

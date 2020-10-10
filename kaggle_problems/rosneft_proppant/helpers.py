@@ -9,7 +9,7 @@ def dist(p1, p2):
 def in_range(l, s, r):
     return l <= s and s < r
 
-class CircleContour:
+class GrayCircleContour:
     def __init__(self):
         self.msk = []
         for r in np.arange(0, 20):
@@ -24,8 +24,23 @@ class CircleContour:
 
         return self.msk[r]
 
+class ColoredCircleContour:
+    def __init__(self):
+        self.msk = []
+        for r in np.arange(0, 20):
+            img = np.zeros(shape=(2 * r + 1, 2 * r + 1, 3))
+            cv2.circle(img, (r, r), r, (1, 1, 1), -1)
 
-circleContour = CircleContour()
+            self.msk.append(img)
+
+
+    def get_msk(self, r):
+        assert(r >= 1 and r < 20)
+
+        return self.msk[r]
+
+
+circleContour = None
 
 def get_masked_img(img, x, y, r):
     x_min = x - r
@@ -108,6 +123,7 @@ def is_border_white_circle(threshed, x, y, r):
 
     return (diff_black / (diff_black + diff_white)) >= 0.2
     # return diff_black, diff_white
+
 
 def get_random_color():
     return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
