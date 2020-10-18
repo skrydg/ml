@@ -71,8 +71,8 @@ class Processor():
 
         contour = np.float32([[i[0][0], i[0][1]] for i in contour])
 
-        l = round(dist(contour[0], contour[1]))
-        h = round(dist(contour[1], contour[2]))
+        l = int(round(dist(contour[0], contour[1])))
+        h = int(round(dist(contour[1], contour[2])))
 
         needed_contour = np.float32([[0, 0], [0, l], [h, l], [h, 0]])
 
