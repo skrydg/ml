@@ -216,7 +216,7 @@ def generate_img():
 
 
 result_bins = []
-for i in range(2000):
+for i in range(5000):
     img, circles = generate_img()
     prop_sizes = [r2prop_size(r) for (_, _, r) in circles]
     
@@ -229,13 +229,15 @@ for i in range(2000):
     
     result_bins.append(cur_bins)
     cv2.imwrite("{}/{}.jpg".format(GENERATED_IMG_DIR, i + 1), img)
+    
+    generated_train = pd.DataFrame(data=result_bins)
+    generated_train.to_csv(GENERATED_LABELS_DIR + "/generated_train.csv")
 
 
 # In[10]:
 
 
-generated_train = pd.DataFrame(data=result_bins)
-generated_train.to_csv(GENERATED_LABELS_DIR + "/generated_train.csv")
+
 
 
 # In[11]:
@@ -244,7 +246,7 @@ generated_train.to_csv(GENERATED_LABELS_DIR + "/generated_train.csv")
 generated_train.describe()
 
 
-# In[12]:
+# In[14]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/rosneft_proppant/generate_img.ipynb')
