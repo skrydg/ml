@@ -20,7 +20,7 @@ class ColoredCircleContour:
 
 
     def get_msk(self, r):
-        assert(r >= 1 and r < 20)
+        assert(r >= 1 and r < 100)
 
         return self.msk[r]
 

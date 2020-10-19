@@ -24,7 +24,11 @@ bins_mm = [
 ]
 bins_pixel = [b * COEF for b in bins_mm]
 bins_dict = {key: value for key, value in zip(bins, bins_pixel)}
+bins2mm = {key: value for key, value in zip(bins, bins_mm)}
 
 INNER_SHAPE = (143.5, 86.5)
 OUTER_SHAPE = (147.5, 90.5)
 TARGET_SHAPE = (round(INNER_SHAPE[0] * COEF), round(INNER_SHAPE[1] * COEF))
+
+def r2prop_size(r):
+    return 2 * r / COEF
