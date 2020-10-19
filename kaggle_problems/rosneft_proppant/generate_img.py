@@ -216,7 +216,7 @@ def generate_img():
 
 
 result_bins = []
-for i in range(10):
+for i in range(2000):
     img, circles = generate_img()
     prop_sizes = [r2prop_size(r) for (_, _, r) in circles]
     
