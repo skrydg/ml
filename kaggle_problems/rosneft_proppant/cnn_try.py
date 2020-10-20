@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[28]:
 
 
 import os
@@ -11,7 +11,7 @@ while not os.getcwd().endswith('ml'):
 sys.path.insert(0, os.getcwd())
 
 
-# In[2]:
+# In[29]:
 
 
 import math
@@ -39,7 +39,7 @@ from kaggle_problems.rosneft_proppant.workspace.common import bins
 from kaggle_problems.rosneft_proppant.workspace.common import TARGET_SHAPE
 
 
-# In[3]:
+# In[30]:
 
 
 DATA_DIR = "kaggle_problems/rosneft_proppant/data/"
@@ -49,7 +49,7 @@ GENERATED_IMG_DIR = GENERATED_DIR + "colored_img"
 GENERATED_LABELS_DIR = GENERATED_DIR + "labels"
 DF_RATE = 1.
 
-sources = ['colored']
+sources = ['bw'] #'colored']
 source_to_fraction = {
     'bw': 'bw',
     'colored': 'colored',
@@ -57,8 +57,7 @@ source_to_fraction = {
 }
 
 
-# In[15]:
-
+# In[31]:
 
 
 def enrich_fraction(train):
@@ -105,7 +104,7 @@ def get_train(source):
     return train
 
 
-# In[16]:
+# In[32]:
 
 
 fraction_sievs = {}
@@ -113,7 +112,7 @@ fraction_sievs = {}
 
 # ### Model
 
-# In[17]:
+# In[33]:
 
 
 class BinsExtraction(Model):
@@ -154,7 +153,7 @@ class BinsExtraction(Model):
 
 # #### Train Input Generator
 
-# In[18]:
+# In[34]:
 
 
 # def get_train_val_datagen(train, source, train_size=0.8):
@@ -188,7 +187,7 @@ class BinsExtraction(Model):
 #     return train_generator, val_generator
 
 
-# In[19]:
+# In[35]:
 
 
 def get_train_val_datagen(train, validation, source):
@@ -222,7 +221,7 @@ def get_train_val_datagen(train, validation, source):
 
 # #### Input generator checking
 
-# In[20]:
+# In[36]:
 
 
 # img, labels = get_train_val_datagen(train, validation, 'colored')[0].next()
@@ -231,13 +230,13 @@ def get_train_val_datagen(train, validation, source):
 
 # #### Callbacks
 
-# In[21]:
+# In[37]:
 
 
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 
-# In[22]:
+# In[38]:
 
 
 learning_rate_reduction = ReduceLROnPlateau(monitor='val_loss', 
@@ -251,14 +250,14 @@ earlystop = EarlyStopping(patience=10)
 callbacks = [earlystop, learning_rate_reduction]
 
 
-# In[23]:
+# In[39]:
 
 
 def metric(true, predicted):
     return tf.keras.backend.mean(tf.math.reduce_sum((true - predicted) ** 2 / (true + predicted), axis=1))
 
 
-# In[24]:
+# In[40]:
 
 
 for source, i in zip(sources, range(len(sources))):
@@ -357,7 +356,7 @@ def get_bins_metric_by_bins(predicted, true):
 #     print("-" * 50)
 
 
-# In[26]:
+# In[27]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/rosneft_proppant/cnn_try.ipynb')
