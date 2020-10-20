@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[28]:
+# In[1]:
 
 
 import os
@@ -11,7 +11,7 @@ while not os.getcwd().endswith('ml'):
 sys.path.insert(0, os.getcwd())
 
 
-# In[29]:
+# In[2]:
 
 
 import math
@@ -39,13 +39,12 @@ from kaggle_problems.rosneft_proppant.workspace.common import bins
 from kaggle_problems.rosneft_proppant.workspace.common import TARGET_SHAPE
 
 
-# In[30]:
+# In[3]:
 
 
 DATA_DIR = "kaggle_problems/rosneft_proppant/data/"
 MODEL_DIR = "kaggle_problems/rosneft_proppant/worace/models"
 GENERATED_DIR = "kaggle_problems/rosneft_proppant/data/generated/"
-GENERATED_IMG_DIR = GENERATED_DIR + "colored_img"
 GENERATED_LABELS_DIR = GENERATED_DIR + "labels"
 DF_RATE = 1.
 
@@ -57,7 +56,7 @@ source_to_fraction = {
 }
 
 
-# In[31]:
+# In[4]:
 
 
 def enrich_fraction(train):
@@ -95,6 +94,7 @@ def get_validation(source):
     validation = validation[validation['fraction'] == source_to_fraction[source]]
 
     validation = common_df_processing(validation)
+    
     return validation
 
 def get_train(source):
@@ -104,7 +104,7 @@ def get_train(source):
     return train
 
 
-# In[32]:
+# In[5]:
 
 
 fraction_sievs = {}
@@ -112,7 +112,7 @@ fraction_sievs = {}
 
 # ### Model
 
-# In[33]:
+# In[6]:
 
 
 class BinsExtraction(Model):
@@ -153,7 +153,7 @@ class BinsExtraction(Model):
 
 # #### Train Input Generator
 
-# In[34]:
+# In[7]:
 
 
 # def get_train_val_datagen(train, source, train_size=0.8):
@@ -187,7 +187,7 @@ class BinsExtraction(Model):
 #     return train_generator, val_generator
 
 
-# In[35]:
+# In[8]:
 
 
 def get_train_val_datagen(train, validation, source):
@@ -221,22 +221,22 @@ def get_train_val_datagen(train, validation, source):
 
 # #### Input generator checking
 
-# In[36]:
+# In[ ]:
 
 
-# img, labels = get_train_val_datagen(train, validation, 'colored')[0].next()
+# img, labels = get_train_val_datagen(train, validation, 'bw')[0].next()
 # display_images(img[0:8].astype(int), 4)
 
 
 # #### Callbacks
 
-# In[37]:
+# In[ ]:
 
 
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 
-# In[38]:
+# In[ ]:
 
 
 learning_rate_reduction = ReduceLROnPlateau(monitor='val_loss', 
@@ -250,14 +250,18 @@ earlystop = EarlyStopping(patience=10)
 callbacks = [earlystop, learning_rate_reduction]
 
 
-# In[39]:
+# In[ ]:
 
 
+EPS = 1e-5
 def metric(true, predicted):
+    true = tf.math.maximum(true, EPS * tf.ones_like( true ))
+    predicted = tf.math.maximum(predicted, EPS * tf.ones_like( predicted ))
+    
     return tf.keras.backend.mean(tf.math.reduce_sum((true - predicted) ** 2 / (true + predicted), axis=1))
 
 
-# In[40]:
+# In[ ]:
 
 
 for source, i in zip(sources, range(len(sources))):
@@ -274,7 +278,7 @@ for source, i in zip(sources, range(len(sources))):
     )
 
     train_datagen, val_datagen = get_train_val_datagen(train, validation, source)
-
+    
     history = model.fit(
         x=train_datagen,
         epochs=50,
@@ -309,7 +313,7 @@ def get_bins_metric_by_bins(predicted, true):
 #print("Total bin loss: {}".format(get_bins_metric(predicted_labels, all_labels)))
 
 
-# In[14]:
+# In[ ]:
 
 
 # for source, i in zip(sources, range(len(sources))):
@@ -356,7 +360,7 @@ def get_bins_metric_by_bins(predicted, true):
 #     print("-" * 50)
 
 
-# In[27]:
+# In[ ]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/rosneft_proppant/cnn_try.ipynb')
