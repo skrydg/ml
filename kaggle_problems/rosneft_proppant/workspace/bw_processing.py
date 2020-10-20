@@ -48,7 +48,10 @@ class Processor:
             return None
 
         msk = self.circleContour.get_msk(r)
+
         sub_img = img[x_min:x_max, y_min:y_max]
+        if (len(msk.shape) != len(sub_img.shape)):
+            msk = msk[:, :, np.newaxis]
 
         sub_img = (sub_img * msk).astype(dtype=int)
         return sub_img
@@ -121,7 +124,7 @@ class Processor:
         # bw_pixels = [100] + bw_pixels
 
         result_circles = []
-        for i in range(50, 10, -1):
+        for i in range(10, 2, -1):
             l = i - 1
             r = i
 

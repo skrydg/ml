@@ -1,5 +1,7 @@
 COEF = 30
 
+MAGIC_COEFF = 0.78
+
 bins = ['6', '7', '8', '10', '12', '14', '16', '18', '20', '25', '30', '35', '40', '45', '50', '60', '70', '80', '100']
 bins_mm = [
     3.35,
@@ -31,4 +33,4 @@ OUTER_SHAPE = (147.5, 90.5)
 TARGET_SHAPE = (round(INNER_SHAPE[0] * COEF), round(INNER_SHAPE[1] * COEF))
 
 def r2prop_size(r):
-    return 2 * r / COEF
+    return 2 * r / COEF * MAGIC_COEFF

@@ -1,9 +1,10 @@
 import cv2
 import os
+import numpy as np
 from pathlib import Path
 import datetime
 import helpers
-
+import random
 import preprocessing
 import bw_processing
 import colored_processing
@@ -17,9 +18,21 @@ DATA_DIR = './data'
 FILE_TO_SUBMIT = "answers.csv"
 MODEL_DIR = './models'
 
+BW_CIRCLE_DIR = '../data/bw_circles'
+
 all_img = [img for img in os.listdir(ORIGINAL_IMG_DIR) if img.endswith('.jpg')]
+
+# if len(all_img) < 5:
+#     exit(1)
+# else:
+#     for img in all_img:
+#         print(img)
+#         img_number, _ = img.split('.')
+#         sb = submition.Submition(img_number, FILE_TO_SUBMIT)
+#         sb.submit([(10, 10, 10)])
+#     exit(0)
+
 start = datetime.datetime.now()
-all_img = all_img[:10]
 try:
     os.remove(FILE_TO_SUBMIT)
 except:
@@ -72,6 +85,22 @@ for img_name in all_img:
         if DEBUG:
             pr.with_debug(debug_dir + "/bw_processing")
         result_circles = pr.process()
+
+        ####################### TODO delete #######################
+        Path(BW_CIRCLE_DIR).mkdir(exist_ok=True, parents=True)
+        _, indexes = np.unique([r for (_, _, r) in result_circles], return_index=True)
+
+        for index, i in zip(indexes, range(len(indexes))):
+            circle_img = pr.get_masked_img(
+                main_area,
+                result_circles[index][1],
+                result_circles[index][0],
+                result_circles[index][2])
+            if circle_img is not None:
+                cv2.imwrite("{}/{}_{}.jpg".format(BW_CIRCLE_DIR, img_number, i), circle_img)
+        ####################### TODO delete #######################
+
+
 
     ############################ COLORED processing ############################
     if not is_gray:
