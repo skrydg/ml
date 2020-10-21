@@ -179,7 +179,7 @@ def generate_img():
     all_circles = []
     img = get_empty_img()
     for (x, y) in means:
-        CNT_CIRCLES = int(np.random.normal(1840, 722, 1)[0])
+        CNT_CIRCLES = max(int(np.random.normal(1840, 722, 1)[0]), 1)
         color = get_random_color()
         centers = np.random.multivariate_normal([x, y], [[TARGET_SHAPE[0] ** 2 / 100, 0], [0, TARGET_SHAPE[1] ** 2 / 100]], size=CNT_CIRCLES)
 
@@ -265,7 +265,7 @@ for i in range(1000):
 generated_train.describe()
 
 
-# In[13]:
+# In[21]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/rosneft_proppant/generate_bw_img.ipynb')
