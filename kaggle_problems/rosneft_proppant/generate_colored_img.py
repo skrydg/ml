@@ -17,7 +17,7 @@ sys.path.insert(0, os.getcwd())
 from kaggle_problems.rosneft_proppant.workspace.common import TARGET_SHAPE
 from kaggle_problems.rosneft_proppant.workspace.helpers import get_random_color
 from kaggle_problems.rosneft_proppant.workspace.common import r2prop_size, bins2mm
-from kaggle_problems.rosneft_proppant.RPCC_metric_utils_for_participants import get_bins_from_granules, sizes_to_sieve_hist
+from kaggle_problems.rosneft_proppant.RPCC_metric_utils_for_participants import sizes_to_sieves, get_bins_from_granules, sizes_to_sieve_hist
 from pathlib import Path
 import random
 import numpy as np
@@ -139,21 +139,52 @@ def draw_background(img, msk):
 # In[7]:
 
 
-bin2low = {'16': 30.0 / 2 + 1e-5, '18': 25.5 / 2 + 1e-5, '20': 21.3 / 2 + 1e-5, '25': 18.0 / 2 + 1e-5, '30': 15.0 / 2, '40': 12.75 / 2}
-bin2high = {'16': 35.5 / 2,       '18': 30.0 / 2,        '20': 25.5 / 2,        '25': 21.3 / 2,        '30': 18.0 / 2, '40': 15.0 / 2}
-
-bin2mean = {'16': 0.005181, '18': 0.057824, '20': 0.156891, '25': 0.356211, '30': 0.215671, '40': 0.170280}
-bin2std = {'16': 0.001865, '18': 0.121420, '20': 0.190781, '25': 0.143069, '30': 0.090675, '40': 0.078468}
-
-bin2normal = {key: (lambda key: float(np.random.normal(bin2mean[key], bin2std[key] ** 2, 1)[0])) for key in bin2mean.keys()}
+def generate_low_high(bins_name):
+    bin2low = {b: [] for b in bins_name}
+    bin2high = {b: [] for b in bins_name}
+    for r in range(1, 100):
+        sieves, names = sizes_to_sieves([r2prop_size(r)], [bins2mm[b] for b in bins_name], bins_name)
+        assert(len(names) == 1)
+        if int(names[0]) == 0:
+            continue
+        bin2low[str(int(names[0]))].append(r)
+        bin2high[str(int(names[0]))].append(r)
+       
+    bin2low = {k: min(v) for k,v in bin2low.items()}
+    bin2high = {k: max(v) for k,v in bin2high.items()}
+    
+    return bin2low, bin2high
 
 
 # In[8]:
 
 
+bin2mean = {'16': 0.005181, '18': 0.057824, '20': 0.156891, '25': 0.356211, '30': 0.215671, '40': 0.170280}
+bin2std = {'16': 0.001865, '18': 0.121420, '20': 0.190781, '25': 0.143069, '30': 0.090675, '40': 0.078468}
+
+bin2low, bin2high = generate_low_high(bin2mean.keys())
+
+bin2normal = {key: (lambda key: float(np.random.normal(bin2mean[key], 2 * bin2std[key], 1)[0])) for key in bin2mean.keys()}
+
+
+# In[ ]:
+
+
+
+
+
+# In[9]:
+
+
+print(bin2low, bin2high)
+
+
+# In[10]:
+
+
 def generate_img():
     PERSENT_FREE = random.randint(20, 80) / 100
-    n = random.randint(2, 15)
+    n = random.randint(2, 10)
     xy_min = [TARGET_SHAPE[0] * 0.2, TARGET_SHAPE[1] * 0.2]
     xy_max = [TARGET_SHAPE[0] * 0.8, TARGET_SHAPE[1] * 0.8]
     means = np.random.uniform(low=xy_min, high=xy_max, size=(n,2))
@@ -161,7 +192,7 @@ def generate_img():
     all_circles = []
     img = get_empty_img()
     for (x, y) in means:
-        CNT_CIRCLES = random.randint(1000, 10000)
+        CNT_CIRCLES = random.randint(1000, 5000)
         color = get_random_color()
         centers = np.random.multivariate_normal([x, y], [[TARGET_SHAPE[0] ** 2 / 100, 0], [0, TARGET_SHAPE[1] ** 2 / 100]], size=CNT_CIRCLES)
 
@@ -212,11 +243,12 @@ def generate_img():
     return img, filtered_circles
 
 
-# In[9]:
+# In[11]:
 
 
 result_bins = []
-for i in range(5000):
+for i in range(1000):
+    print(i)
     img, circles = generate_img()
     prop_sizes = [r2prop_size(r) for (_, _, r) in circles]
     
@@ -234,19 +266,19 @@ for i in range(5000):
     generated_train.to_csv(GENERATED_LABELS_DIR + "/generated_colored_train.csv")
 
 
-# In[10]:
+# In[ ]:
 
 
 
 
 
-# In[11]:
+# In[12]:
 
 
 generated_train.describe()
 
 
-# In[15]:
+# In[13]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/rosneft_proppant/generate_colored_img.ipynb')
