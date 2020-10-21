@@ -157,7 +157,7 @@ bin2std = {'16': 0.008493, '18': 0.211471, '20': 0.212169, '25': 0.182625, '30':
 bin2low, bin2high = generate_low_high(bin2mean.keys())
 
 
-bin2normal = {key: (lambda key: float(np.random.normal(bin2mean[key], bin2std[key] ** 2, 1)[0])) for key in bin2mean.keys()}
+bin2normal = {key: (lambda key: float(np.random.normal(bin2mean[key], 3 * bin2std[key], 1)[0])) for key in bin2mean.keys()}
 
 
 # In[9]:
@@ -166,12 +166,12 @@ bin2normal = {key: (lambda key: float(np.random.normal(bin2mean[key], bin2std[ke
 print(bin2low, bin2high)
 
 
-# In[10]:
+# In[18]:
 
 
 def generate_img():
     PERSENT_FREE = random.randint(50, 90) / 100
-    n = random.randint(2, 8)
+    n = random.randint(2, 4)
     xy_min = [TARGET_SHAPE[0] * 0.2, TARGET_SHAPE[1] * 0.2]
     xy_max = [TARGET_SHAPE[0] * 0.8, TARGET_SHAPE[1] * 0.8]
     means = np.random.uniform(low=xy_min, high=xy_max, size=(n,2))
@@ -179,7 +179,7 @@ def generate_img():
     all_circles = []
     img = get_empty_img()
     for (x, y) in means:
-        CNT_CIRCLES = random.randint(1000, 3000)
+        CNT_CIRCLES = int(np.random.normal(1840, 722, 1)[0])
         color = get_random_color()
         centers = np.random.multivariate_normal([x, y], [[TARGET_SHAPE[0] ** 2 / 100, 0], [0, TARGET_SHAPE[1] ** 2 / 100]], size=CNT_CIRCLES)
 
@@ -230,7 +230,7 @@ def generate_img():
     return img, filtered_circles
 
 
-# In[11]:
+# In[19]:
 
 
 result_bins = []
@@ -244,6 +244,7 @@ for i in range(1000):
     bins_mm += [0]
     cur_bins = sizes_to_sieve_hist(pd.DataFrame({"prop_size": prop_sizes}), bins_mm, bins_names)
     cur_bins['ImageId'] = i + 1
+    cur_bins['prop_count'] = len(prop_sizes)
     
     result_bins.append(cur_bins)
     cv2.imwrite("{}/{}.jpg".format(GENERATED_IMG_DIR, i + 1), img)
@@ -258,7 +259,7 @@ for i in range(1000):
 
 
 
-# In[12]:
+# In[20]:
 
 
 generated_train.describe()
