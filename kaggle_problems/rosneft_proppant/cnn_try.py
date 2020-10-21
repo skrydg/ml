@@ -133,10 +133,10 @@ class BinsExtraction(Model):
             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
             tf.keras.layers.Dropout(rate=0.5),
             
-#             tf.keras.layers.Conv2D(filters=self.FilterSize3, kernel_size=(3, 3), strides=(3, 3)),
-#             tf.keras.layers.BatchNormalization(),
-#             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-#             tf.keras.layers.Dropout(rate=0.5),
+            tf.keras.layers.Conv2D(filters=self.FilterSize3, kernel_size=(3, 3), strides=(3, 3)),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
+            tf.keras.layers.Dropout(rate=0.5),
 
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(10, activation='relu'),
@@ -221,7 +221,7 @@ def get_train_val_datagen(train, validation, source):
 
 # #### Input generator checking
 
-# In[ ]:
+# In[9]:
 
 
 # img, labels = get_train_val_datagen(train, validation, 'bw')[0].next()
@@ -230,13 +230,13 @@ def get_train_val_datagen(train, validation, source):
 
 # #### Callbacks
 
-# In[ ]:
+# In[10]:
 
 
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 
-# In[ ]:
+# In[11]:
 
 
 learning_rate_reduction = ReduceLROnPlateau(monitor='val_loss', 
@@ -250,7 +250,7 @@ earlystop = EarlyStopping(patience=10)
 callbacks = [earlystop, learning_rate_reduction]
 
 
-# In[ ]:
+# In[12]:
 
 
 EPS = 1e-5
@@ -261,7 +261,7 @@ def metric(true, predicted):
     return tf.keras.backend.mean(tf.math.reduce_sum((true - predicted) ** 2 / (true + predicted), axis=1))
 
 
-# In[ ]:
+# In[13]:
 
 
 for source, i in zip(sources, range(len(sources))):
@@ -360,7 +360,7 @@ def get_bins_metric_by_bins(predicted, true):
 #     print("-" * 50)
 
 
-# In[ ]:
+# In[15]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/rosneft_proppant/cnn_try.ipynb')
