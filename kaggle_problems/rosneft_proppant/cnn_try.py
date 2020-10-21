@@ -43,7 +43,7 @@ from kaggle_problems.rosneft_proppant.workspace.common import TARGET_SHAPE
 
 
 DATA_DIR = "kaggle_problems/rosneft_proppant/data/"
-MODEL_DIR = "kaggle_problems/rosneft_proppant/worace/models"
+MODEL_DIR = "kaggle_problems/rosneft_proppant/workspace/models"
 GENERATED_DIR = "kaggle_problems/rosneft_proppant/data/generated/"
 GENERATED_LABELS_DIR = GENERATED_DIR + "labels"
 DF_RATE = 1.
@@ -360,7 +360,7 @@ def get_bins_metric_by_bins(predicted, true):
 #     print("-" * 50)
 
 
-# In[15]:
+# In[16]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/rosneft_proppant/cnn_try.ipynb')
