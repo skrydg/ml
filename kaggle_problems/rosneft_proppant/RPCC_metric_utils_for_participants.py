@@ -156,11 +156,8 @@ def sizes_to_sieves(sizes, sive_diam, sieves_names):
     sizes_ = np.sort(sizes)
     sieve_bins = np.zeros_like(sizes_)
 
-    # for diam, name in zip(reversed(sive_diam), reversed(sieves_names)):
-    #     sieve_bins[sizes_>= diam] = name  # TODO must be <= in original
-
     for diam, name in zip(sive_diam, sieves_names):
-        sieve_bins[sizes_<= diam] = name  # TODO must be <= in original
+        sieve_bins[sizes_<= diam] = name
 
     return sizes_, sieve_bins
 
