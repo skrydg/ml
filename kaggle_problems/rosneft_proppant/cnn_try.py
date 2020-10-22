@@ -115,7 +115,7 @@ fraction_sievs = {}
 
 # ### Model
 
-# In[6]:
+# In[23]:
 
 
 class BinsExtraction(Model):
@@ -129,22 +129,22 @@ class BinsExtraction(Model):
             tf.keras.layers.Conv2D(filters=self.FilterSize1, kernel_size=(5, 5), strides=(5, 5)),
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-            tf.keras.layers.Dropout(rate=0.3),
+            tf.keras.layers.Dropout(rate=0.5),
 
             tf.keras.layers.Conv2D(filters=self.FilterSize2, kernel_size=(3, 3), strides=(3, 3)),
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-            tf.keras.layers.Dropout(rate=0.3),
+            tf.keras.layers.Dropout(rate=0.5),
             
-            tf.keras.layers.Conv2D(filters=self.FilterSize3, kernel_size=(3, 3), strides=(3, 3)),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-            tf.keras.layers.Dropout(rate=0.3),
+#             tf.keras.layers.Conv2D(filters=self.FilterSize3, kernel_size=(3, 3), strides=(3, 3)),
+#             tf.keras.layers.BatchNormalization(),
+#             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
+#             tf.keras.layers.Dropout(rate=0.5),
 
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(100, activation='relu'),
             tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Dropout(rate=0.3),
+            tf.keras.layers.Dropout(rate=0.5),
             tf.keras.layers.Dense(len(fraction_sievs[fraction]), activation='softmax'),
         ]
 
@@ -363,7 +363,7 @@ def get_bins_metric_by_bins(predicted, true):
 #     print("-" * 50)
 
 
-# In[22]:
+# In[ ]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/rosneft_proppant/cnn_try.ipynb')
