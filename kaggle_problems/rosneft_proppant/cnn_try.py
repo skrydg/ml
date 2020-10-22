@@ -140,8 +140,6 @@ class BinsExtraction(Model):
 
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(10, activation='relu'),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Dropout(rate=0.5),
             tf.keras.layers.Dense(len(fraction_sievs[fraction]), activation='softmax'),
         ]
 
@@ -360,7 +358,7 @@ def get_bins_metric_by_bins(predicted, true):
 #     print("-" * 50)
 
 
-# In[18]:
+# In[19]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/rosneft_proppant/cnn_try.ipynb')
