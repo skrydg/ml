@@ -10,6 +10,9 @@ while not os.getcwd().endswith('ml'):
     os.chdir('..')
 sys.path.insert(0, os.getcwd())
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 
 # In[2]:
 
@@ -358,7 +361,7 @@ def get_bins_metric_by_bins(predicted, true):
 #     print("-" * 50)
 
 
-# In[19]:
+# In[20]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/rosneft_proppant/cnn_try.ipynb')
