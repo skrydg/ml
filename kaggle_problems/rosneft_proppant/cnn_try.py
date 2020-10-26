@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[21]:
+# In[1]:
 
 
 import os
@@ -10,8 +10,8 @@ while not os.getcwd().endswith('ml'):
     os.chdir('..')
 sys.path.insert(0, os.getcwd())
 
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 # In[2]:
@@ -37,9 +37,7 @@ from ml_helpers.common_helpers import display_history_metrics
 from sklearn.model_selection import train_test_split
 import pickle
 
-from kaggle_problems.rosneft_proppant.workspace.common import bins
-
-from kaggle_problems.rosneft_proppant.workspace.common import TARGET_SHAPE
+from kaggle_problems.rosneft_proppant.workspace.common import bins, bin2high, TARGET_SHAPE
 
 
 # In[3]:
@@ -49,7 +47,7 @@ DATA_DIR = "kaggle_problems/rosneft_proppant/data/"
 MODEL_DIR = "kaggle_problems/rosneft_proppant/workspace/models"
 GENERATED_DIR = "kaggle_problems/rosneft_proppant/data/generated/"
 GENERATED_LABELS_DIR = GENERATED_DIR + "labels"
-DF_RATE = 1.
+DF_RATE = 0.5
 
 sources = ['bw'] #'colored']
 source_to_fraction = {
@@ -57,6 +55,12 @@ source_to_fraction = {
     'colored': 'colored',
     'threshed': 'bw'
 }
+
+fraction_sievs = {
+    'bw': ['16', '18', '20', '25', '30', '35', '40']
+}
+
+COEF_COMPRESS = 4
 
 
 # In[4]:
@@ -107,51 +111,94 @@ def get_train(source):
     return train
 
 
-# In[5]:
-
-
-fraction_sievs = {}
-
-
 # ### Model
 
-# In[23]:
+# In[5]:
 
 
 class BinsExtraction(Model):
     def __init__(self, fraction):
         super(BinsExtraction, self).__init__()
-        self.FilterSize1 = 32
-        self.FilterSize2 = 16
-        self.FilterSize3 = 8
+        self.FilterSize1 = 10
         
-        self.model_layers = [
-            tf.keras.layers.Conv2D(filters=self.FilterSize1, kernel_size=(5, 5), strides=(5, 5)),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-            tf.keras.layers.Dropout(rate=0.5),
-
-            tf.keras.layers.Conv2D(filters=self.FilterSize2, kernel_size=(3, 3), strides=(3, 3)),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-            tf.keras.layers.Dropout(rate=0.5),
+        self.fraction_sievs = fraction_sievs[fraction]
+        
+        self.pipe_for_size = {}
+        
+        for b in self.fraction_sievs:
+            d = round(2 * bin2high[b] / COEF_COMPRESS)
             
-#             tf.keras.layers.Conv2D(filters=self.FilterSize3, kernel_size=(3, 3), strides=(3, 3)),
-#             tf.keras.layers.BatchNormalization(),
-#             tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
-#             tf.keras.layers.Dropout(rate=0.5),
-
+            self.pipe_for_size[b] = [
+                [
+                    tf.keras.layers.Conv2D(filters=self.FilterSize1, kernel_size=(3, 3), strides=(2, 2)),
+                    tf.keras.layers.BatchNormalization(),
+                    tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
+                ],
+                [
+                    tf.keras.layers.Conv2D(filters=self.FilterSize1, kernel_size=(3, 3), strides=(2, 2)),
+                    tf.keras.layers.BatchNormalization(),
+                    tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
+                ],
+                [
+                    tf.keras.layers.Conv2D(filters=self.FilterSize1, kernel_size=(3, 3), strides=(2, 2)),
+                    tf.keras.layers.BatchNormalization(),
+                    tf.keras.layers.MaxPool2D(pool_size=(2, 2)),
+                ]
+            ]
+        
+        self.cnn_afterword = [
+            tf.keras.layers.Dropout(rate=0.3),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(100, activation='relu'),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.Dropout(rate=0.5),
-            tf.keras.layers.Dense(len(fraction_sievs[fraction]), activation='softmax'),
+            lambda x: tf.reduce_sum(x, axis=1, keepdims=True)
+        ]
+        
+        self.fraction_agregate = [
+            tf.keras.layers.Dense(1, activation='softmax')
+        ]
+        
+        self.afterword_pipes = [
+            tf.keras.layers.Dense(len(self.fraction_sievs), activation='softmax')
         ]
 
     def call(self, x, *args, **kwargs):
-        for model_layer in self.model_layers:
-            x = model_layer(x, *args, **kwargs)
-        return x
+        res = []
+        for b in self.fraction_sievs:
+            cnn_res = []
+            copy_x = x
+            cnn_pipes = self.pipe_for_size[b]
+            for cnn in cnn_pipes:
+                for pipe in cnn:
+                    copy_x = pipe(copy_x)
+                
+                result_after_cnn = copy_x
+                for layer in self.cnn_afterword:
+                    result_after_cnn = layer(result_after_cnn)
+                cnn_res.append(result_after_cnn)
+            
+
+            cnn_res = tf.concat(cnn_res, axis=1)
+           # print("cnn_res: ", cnn_res)
+            for layer in self.fraction_agregate:
+                cnn_res = layer(cnn_res)
+            
+            res.append(cnn_res)
+        
+
+        res = tf.concat(res, axis=1)
+        #print("res: ", res)
+        
+        for pipe in self.afterword_pipes:
+            res = pipe(res)
+        
+        
+        return res
+    
+
+
+# In[6]:
+
+
+model = BinsExtraction('bw')
 
 
 # #### Train Input Generator
@@ -160,10 +207,7 @@ class BinsExtraction(Model):
 
 
 # def get_train_val_datagen(train, source, train_size=0.8):
-#     fraction = source_to_fraction[source]
-#     train_fraction = train[train['fraction'] == source_to_fraction[source]]
-    
-#     train_fraction, val_fraction = train_test_split(train_fraction, train_size=train_size, random_state=123)
+#     train_fraction, val_fraction = train_test_split(train, train_size=train_size, random_state=123)
     
 #     bins_fraction = fraction_sievs[fraction]
     
@@ -174,7 +218,7 @@ class BinsExtraction(Model):
 #             directory="kaggle_problems/rosneft_proppant/data/{}_main_area".format(source),
 #             x_col='filename', 
 #             y_col=bins_fraction,
-#             target_size=TARGET_SHAPE,
+#             target_size=(TARGET_SHAPE[0] // COEF_COMPRESS, TARGET_SHAPE[1] // COEF_COMPRESS),
 #             batch_size=16,
 #             class_mode='other',
 #     )
@@ -184,7 +228,7 @@ class BinsExtraction(Model):
 #         directory="kaggle_problems/rosneft_proppant/data/{}_main_area".format(source),
 #         x_col='filename', 
 #         y_col=bins_fraction,
-#         target_size=TARGET_SHAPE,
+#         target_size=(TARGET_SHAPE[0] // COEF_COMPRESS, TARGET_SHAPE[1] // COEF_COMPRESS),
 #         batch_size=16,
 #         class_mode='other')
 #     return train_generator, val_generator
@@ -204,7 +248,7 @@ def get_train_val_datagen(train, validation, source):
             directory="kaggle_problems/rosneft_proppant/data/generated/{}_img".format(source),
             x_col='filename', 
             y_col=bins_fraction,
-            target_size=TARGET_SHAPE,
+            target_size=(TARGET_SHAPE[0] // COEF_COMPRESS, TARGET_SHAPE[1] // COEF_COMPRESS),
             batch_size=16,
             class_mode='other',
     )
@@ -214,7 +258,7 @@ def get_train_val_datagen(train, validation, source):
             directory="kaggle_problems/rosneft_proppant/data/{}_main_area".format(source),
             x_col='filename', 
             y_col=bins_fraction,
-            target_size=TARGET_SHAPE,
+            target_size=(TARGET_SHAPE[0] // COEF_COMPRESS, TARGET_SHAPE[1] // COEF_COMPRESS),
             batch_size=16,
             class_mode='other',
     )
@@ -243,7 +287,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 
 learning_rate_reduction = ReduceLROnPlateau(monitor='val_loss', 
-                                            patience=2, 
+                                            patience=3, 
                                             verbose=1, 
                                             factor=0.5, 
                                             min_lr=0.00001)
@@ -261,6 +305,12 @@ def metric(true, predicted):
     true = tf.math.maximum(true, EPS * tf.ones_like( true ))
     predicted = tf.math.maximum(predicted, EPS * tf.ones_like( predicted ))
     
+    sum_true = tf.math.reduce_sum(true, axis=1, keepdims=True)
+    true /= sum_true
+    
+    sum_predicted = tf.math.reduce_sum(predicted, axis = 1, keepdims=True)
+    predicted /= sum_predicted
+
     return tf.keras.backend.mean(tf.math.reduce_sum((true - predicted) ** 2 / (true + predicted), axis=1))
 
 
@@ -272,7 +322,6 @@ for source, i in zip(sources, range(len(sources))):
     train = get_train(source)
     fraction = source_to_fraction[source]
     
-    fraction_sievs[fraction] = get_fraction_sievs(validation, fraction)
     
     model = BinsExtraction(fraction)
     model.compile(
@@ -284,7 +333,7 @@ for source, i in zip(sources, range(len(sources))):
     
     history = model.fit(
         x=train_datagen,
-        epochs=50,
+        epochs=4,
         validation_data=val_datagen,
         callbacks=callbacks
     )
@@ -295,6 +344,24 @@ for source, i in zip(sources, range(len(sources))):
         pickle.dump(history.history, f)
         
     model.save(MODEL_DIR + "/model_benchmark_{}".format(source))
+
+
+# In[ ]:
+
+
+res = model.predict(x=val_datagen)
+
+
+# In[ ]:
+
+
+print(res)
+
+
+# In[ ]:
+
+
+model.summary()
 
 
 # In[ ]:
