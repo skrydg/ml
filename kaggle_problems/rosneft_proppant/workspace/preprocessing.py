@@ -4,11 +4,12 @@ from helpers import *
 from common import *
 
 class Processor():
-    def __init__(self, img, img_number):
+    def __init__(self, img, img_number, brigthness):
         self.debug = False
         self.img_number = img_number
         self.img = img
         self.origin_img = copy.deepcopy(img)
+        self.brigthness = brigthness
 
     def with_debug(self, debug_dir):
         self.debug = True
@@ -39,9 +40,12 @@ class Processor():
         return len(res) == 4
 
     def is_contours_simular(self, a, b, eps=0.1):
-        return (abs(cv2.contourArea(a) - cv2.contourArea(b)) / (cv2.contourArea(a) + cv2.contourArea(b)) < eps) and \
-               (abs(cv2.arcLength(a, True) - cv2.arcLength(b, True)) / (
-                           cv2.arcLength(a, True) + cv2.arcLength(b, True)) < eps)
+        a_area = cv2.contourArea(a)
+        b_area = cv2.contourArea(b)
+        a_len = cv2.arcLength(a, True)
+        b_len = cv2.arcLength(b, True)
+        return (abs(a_area - b_area) / (a_area + b_area) < eps) and \
+               (abs(a_len - b_len) / (a_len + b_len) < eps)
 
     def get_main_contour(self, thresh, find_inner):
         contours, hierarchy = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
@@ -88,11 +92,12 @@ class Processor():
 
     def resize(self, img):
         # изменение пропорций картинки
-        return cv2.resize(img, (TARGET_SHAPE[1], TARGET_SHAPE[0]))
+        return img
+        #return cv2.resize(img, (int(TARGET_SHAPE[1] / 2), int(TARGET_SHAPE[0] / 2)))
 
     def process(self):
         #############################################################################################
-        self.img = self.increase_brightness(self.img, 100)
+        self.img = self.increase_brightness(self.img, self.brigthness)
         if self.debug:
             cv2.imwrite("{}/img_with_brightness.jpg".format(self.debug_dir), self.img)
         #############################################################################################
@@ -112,7 +117,6 @@ class Processor():
             print("find outer contour for img_name: {}", self.img_number)
 
         if contour is None:
-            print("ERROR: {}", self.img_number)
             return None
         #############################################################################################
 
@@ -137,9 +141,9 @@ class Processor():
             self.img = self.img[x_diff:-x_diff, y_diff:-y_diff]
 
         #############################################################################################
-        print(self.img.shape)
+
         self.img = self.resize(self.img)
-        print(self.img.shape)
+
         if self.debug:
             cv2.imwrite("{}/main_area.jpg".format(self.debug_dir), self.img)
         return self.img

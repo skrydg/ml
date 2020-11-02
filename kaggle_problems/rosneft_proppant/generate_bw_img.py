@@ -14,9 +14,9 @@ sys.path.insert(0, os.getcwd())
 # In[2]:
 
 
-from kaggle_problems.rosneft_proppant.workspace.common import TARGET_SHAPE
+from kaggle_problems.rosneft_proppant.workspace.common import TARGET_SHAPE, SUB_IMG_CNT
 from kaggle_problems.rosneft_proppant.workspace.helpers import get_random_color
-from kaggle_problems.rosneft_proppant.workspace.common import r2prop_size, bins2mm
+from kaggle_problems.rosneft_proppant.workspace.common import r2prop_size, bins2mm, bin2low, bin2high
 from kaggle_problems.rosneft_proppant.RPCC_metric_utils_for_participants import get_bins_from_granules, sizes_to_sieve_hist, sizes_to_sieves
 from pathlib import Path
 import random
@@ -131,46 +131,23 @@ def draw_background(img, msk):
 # In[7]:
 
 
-def generate_low_high(bins_name):
-    bin2low = {b: [] for b in bins_name}
-    bin2high = {b: [] for b in bins_name}
-    for r in range(1, 100):
-        sieves, names = sizes_to_sieves([r2prop_size(r)], [bins2mm[b] for b in bins_name], bins_name)
-        assert(len(names) == 1)
-        if int(names[0]) == 0:
-            continue
-        bin2low[str(int(names[0]))].append(r)
-        bin2high[str(int(names[0]))].append(r)
-       
-    bin2low = {k: min(v) for k,v in bin2low.items()}
-    bin2high = {k: max(v) for k,v in bin2high.items()}
-    
-    return bin2low, bin2high
+bin2mean = {'16': 0.012460, '18': 0.386361, '20': 0.425973, '25': 0.109537, '30': 0.051580, '35': 0.011694, '40': 0.002433}
+bin2std = {'16': 0.008493, '18': 0.211471, '20': 0.212169, '25': 0.182625, '30': 0.115136, '35': 0.032932, '40': 0.009722}
+
+bin2normal = {key: (lambda key: float(np.random.normal(bin2mean[key], 3 * bin2std[key], 1)[0])) for key in bin2mean.keys()}
 
 
 # In[8]:
 
 
-bin2mean = {'16': 0.012460, '18': 0.386361, '20': 0.425973, '25': 0.109537, '30': 0.051580, '35': 0.011694, '40': 0.002433, '45': 0.000045, '50': 0.000088}
-bin2std = {'16': 0.008493, '18': 0.211471, '20': 0.212169, '25': 0.182625, '30': 0.115136, '35': 0.032932, '40': 0.009722, '45': 0.000548, '50': 0.000401}
-
-bin2low, bin2high = generate_low_high(bin2mean.keys())
-
-
-bin2normal = {key: (lambda key: float(np.random.normal(bin2mean[key], 3 * bin2std[key], 1)[0])) for key in bin2mean.keys()}
-
-
-# In[9]:
-
-
 print(bin2low, bin2high)
 
 
-# In[18]:
+# In[15]:
 
 
 def generate_img():
-    PERSENT_FREE = random.randint(50, 90) / 100
+    PERSENT_FREE = random.randint(20, 90) / 100
     n = random.randint(2, 4)
     xy_min = [TARGET_SHAPE[0] * 0.2, TARGET_SHAPE[1] * 0.2]
     xy_max = [TARGET_SHAPE[0] * 0.8, TARGET_SHAPE[1] * 0.8]
@@ -221,51 +198,80 @@ def generate_img():
         img[x - r: x + r + 1, y - r: y + r + 1] *= (1 - circle_msk[:, :, np.newaxis])
         img[x - r: x + r + 1, y - r: y + r + 1] += circle
 
-        filtered_circles.append((x, y, r))
+        filtered_circles.append((x // 4, y // 4, r))
 
     img = draw_background(img, msk).astype(np.uint8)
     
     img = cv2.resize(img, (TARGET_SHAPE[1] // 4, TARGET_SHAPE[0] // 4))
-    img = cv2.resize(img, (TARGET_SHAPE[1], TARGET_SHAPE[0]))
     return img, filtered_circles
 
 
-# In[19]:
+# In[16]:
 
 
 result_bins = []
-for i in range(1000):
-    img, circles = generate_img()
+generated_train = None
+def get_sub(img, circles, l, k):
+    i_l = int(img.shape[0] / SUB_IMG_CNT * l)
+    i_r = int(img.shape[0] / SUB_IMG_CNT * (l + 1))
+    
+    j_l = int(img.shape[1] / SUB_IMG_CNT * k)
+    j_r = int(img.shape[1] / SUB_IMG_CNT * (k + 1))
+    
+    circles = [(x, y, r) for (x, y, r) in circles if in_range(i_l, x, i_r) and in_range(j_l, y, j_r)]
+    return img[i_l: i_r, j_l:j_r], circles
+
+def append_img(img, circles, image_id, sub_image_id):
     prop_sizes = [r2prop_size(r) for (_, _, r) in circles]
     
     bins_names = [i for i in bin2low.keys()]
     bins_mm = [bins2mm[key] for key in bins_names]
     bins_names += [0]
     bins_mm += [0]
-    cur_bins = sizes_to_sieve_hist(pd.DataFrame({"prop_size": prop_sizes}), bins_mm, bins_names)
-    cur_bins['ImageId'] = i + 1
+        
+    if len(circles) != 0:
+        cur_bins = sizes_to_sieve_hist(pd.DataFrame({"prop_size": prop_sizes}), bins_mm, bins_names)
+    else:
+        cur_bins = {str(name): 0 for name in bins_names}
+        
+    cur_bins['ImageId'] = sub_image_id
+    cur_bins['RealImageId'] = image_id
     cur_bins['prop_count'] = len(prop_sizes)
     
     result_bins.append(cur_bins)
-    cv2.imwrite("{}/{}.jpg".format(GENERATED_IMG_DIR, i + 1), img)
+    cv2.imwrite("{}/{}.jpg".format(GENERATED_IMG_DIR, sub_image_id), img)
     
     generated_train = pd.DataFrame(data=result_bins)
     generated_train.to_csv(GENERATED_LABELS_DIR + "/generated_bw_train.csv")
+    return generated_train
 
 
-# In[ ]:
+# In[17]:
 
 
+for i in range(2):
+    img, circles = generate_img()
+    
+    for l in range(SUB_IMG_CNT):
+        for k in range(SUB_IMG_CNT):
+            sub_img, sub_circle = get_sub(img, circles, l, k)
+            generated_train = append_img(sub_img, sub_circle, i + 1, i * SUB_IMG_CNT * SUB_IMG_CNT + l * SUB_IMG_CNT + k)
+            
 
 
+# In[18]:
 
-# In[20]:
+
+generated_train.prop_count.sum()
+
+
+# In[13]:
 
 
 generated_train.describe()
 
 
-# In[21]:
+# In[14]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/rosneft_proppant/generate_bw_img.ipynb')

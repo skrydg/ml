@@ -1,8 +1,11 @@
 import numpy as np
 
+
 COEF = 30
 
-MAGIC_COEFF = 0.78
+SUB_IMG_CNT = 3 # actualy 3 * 3
+
+MAGIC_COEFF = 0.9
 
 bins = ['6', '7', '8', '10', '12', '14', '16', '18', '20', '25', '30', '35', '40', '45', '50', '60', '70', '80', '100']
 bins_mm = [
@@ -35,10 +38,10 @@ OUTER_SHAPE = (147.5, 90.5)
 TARGET_SHAPE = (round(INNER_SHAPE[0] * COEF), round(INNER_SHAPE[1] * COEF))
 
 def r2prop_size(r):
-    return 2 * r / COEF * MAGIC_COEFF
+    return 2 * r / (COEF / 1.5) * MAGIC_COEFF
 
 def prop_size2r(prop_size):
-    return prop_size * COEF / 2 / MAGIC_COEFF
+    return prop_size * (COEF / 1.5) / MAGIC_COEFF
 
 def sizes_to_sieves(sizes, sive_diam, sieves_names):
     """
@@ -71,3 +74,18 @@ def generate_low_high(bins_name):
     return bin2low, bin2high
 
 bin2low, bin2high = generate_low_high(bins)
+
+def in_range(l, s, r):
+    return l <= s and s < r
+
+def get_sub(img, circles, l, k):
+    i_l = int(img.shape[0] // SUB_IMG_CNT * l)
+    i_r = int(img.shape[0] // SUB_IMG_CNT * (l + 1))
+
+    j_l = int(img.shape[1] // SUB_IMG_CNT * k)
+    j_r = int(img.shape[1] // SUB_IMG_CNT * (k + 1))
+
+    if circles is not None:
+        circles = [(x, y, r) for (x, y, r) in circles if in_range(i_l, x, i_r) and in_range(j_l, y, j_r)]
+        return img[i_l: i_r, j_l:j_r], circles
+    return img[i_l: i_r, j_l:j_r]

@@ -24,6 +24,8 @@ class ColoredCircleContour:
 
         return self.msk[r]
 
+
+
 def is_white_circle(threshed, x, y, r):
     x, y = y, x
     cnt_black = get_count_pixel_in_circle(threshed, x, y, r, 0)

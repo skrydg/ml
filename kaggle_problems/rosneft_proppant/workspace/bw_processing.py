@@ -10,17 +10,20 @@ bw_bins = ['20', '25', '30', '35', '40', '50']
 class GrayCircleContour:
     def __init__(self):
         self.msk = []
+        self.msk_sum = []
         for r in np.arange(0, 100):
             img = np.zeros(shape=(2 * r + 1, 2 * r + 1))
             cv2.circle(img, (r, r), r, 1, -1)
 
             self.msk.append(img)
+            self.msk_sum.append(np.sum(img))
 
 
     def get_msk(self, r):
-        assert(r >= 1 and r < 100)
-
         return self.msk[r]
+
+    def get_msk_sum(self, r):
+        return self.msk_sum[r]
 
 class Processor:
     circleContour = GrayCircleContour()
@@ -28,8 +31,9 @@ class Processor:
         self.debug = False
         self.img_number = img_number
         self.img = img
-        self.original_img = copy.deepcopy(img)
-        self.img_with_circle = copy.deepcopy(img)
+        self.img = cv2.resize(img, (int(TARGET_SHAPE[1] / 1.5), int(TARGET_SHAPE[0] / 1.5)))
+        self.original_img = copy.deepcopy(self.img)
+        self.img_with_circle = copy.deepcopy(self.img)
 
     def with_debug(self, debug_dir):
         self.debug = True
@@ -56,14 +60,8 @@ class Processor:
         sub_img = (sub_img * msk).astype(dtype=int)
         return sub_img
 
-    def is_convex_in_circle(self, threshed, x, y, r):
-        x, y = y, x
-        sub_img = self.get_masked_img(threshed, x, y, r)
-
-        if sub_img is None:
-            return 0
-
-        x, y = np.where(sub_img == 0)
+    def is_convex_in_circle(self, threshed, x, y, r, masked_img):
+        x, y = np.where(masked_img == 0)
 
         x -= r
         y -= r
@@ -72,37 +70,38 @@ class Processor:
 
         return min_di / r >= 0.8
 
-    def get_count_pixel_in_circle(self, img, x, y, r, pixel):
-        sub_img = self.get_masked_img(img, x, y, r)
-        if sub_img is None:
-            return None
+    def get_count_pixel_in_circle(self, img, x, y, r, pixel, masked_img):
         msk = self.circleContour.get_msk(r)
 
-        cnt = np.sum(np.logical_and(sub_img == pixel, msk == 1))
+        cnt = np.sum(np.logical_and(masked_img == pixel, msk == 1))
 
         return cnt
 
-    def is_border_white_circle(self, threshed, x, y, r):
-        x, y = y, x
-        cnt_black = self.get_count_pixel_in_circle(threshed, x, y, r, 0)
-        cnt_white = self.get_count_pixel_in_circle(threshed, x, y, r, 255)
-        if (cnt_black is None) or (cnt_white is None):
-            return False
-            # return None, None
-
+    def is_border_white_circle(self, threshed, x, y, r, masked_img):
+        cnt_black = self.get_count_pixel_in_circle(threshed, x, y, r, 0, masked_img)
+        cnt_white = self.get_count_pixel_in_circle(threshed, x, y, r, 255, masked_img)
         cnt_all = cnt_black + cnt_white
 
-        cnt_black1 = self.get_count_pixel_in_circle(threshed, x, y, r + 2, 0)
-        cnt_white1 = self.get_count_pixel_in_circle(threshed, x, y, r + 2, 255)
-        if (cnt_black1 is None) or (cnt_white1 is None):
+        masked_img = self.get_masked_img(self.threshed, x, y, r + 2)
+        if masked_img is None:
             return False
-            # return None, None
+        cnt_black1 = self.get_count_pixel_in_circle(threshed, x, y, r + 2, 0, masked_img)
+        cnt_white1 = self.get_count_pixel_in_circle(threshed, x, y, r + 2, 255, masked_img)
         cnt_all1 = cnt_black + cnt_white
 
         diff_black = cnt_black1 - cnt_black
         diff_white = cnt_white1 - cnt_white
 
         return (diff_black / (diff_black + diff_white)) >= 0.2
+
+    def all_filters(self, x, y, r):
+        x, y = y, x
+        masked_img = self.get_masked_img(self.threshed, x, y, r)
+        if (masked_img is None):
+            return False
+
+        return self.is_convex_in_circle(self.threshed, x, y, r, masked_img) and \
+               self.is_border_white_circle(self.threshed, x, y, r, masked_img)
 
     def process(self):
         gaussian_3 = cv2.GaussianBlur(self.img, (0, 0), 2.0)
@@ -113,44 +112,38 @@ class Processor:
         self.gray = cv2.cvtColor(self.img, cv2.COLOR_RGB2GRAY)
         _, self.threshed = cv2.threshold(self.gray, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
 
-        self.threshed_with_circle = cv2.cvtColor(self.threshed, cv2.COLOR_GRAY2RGB)
+        if self.debug:
+            self.threshed_with_circle = cv2.cvtColor(self.threshed, cv2.COLOR_GRAY2RGB)
 
         if self.debug:
             cv2.imwrite("{}/gray.jpg".format(self.debug_dir), self.gray)
             cv2.imwrite("{}/threshed.jpg".format(self.debug_dir), self.threshed)
 
 
-        # bw_pixels = sorted([bins_dict[bin_key] for bin_key in bw_bins], reverse=True)
-        # bw_pixels = [100] + bw_pixels
-
         result_circles = []
-        for i in range(10, 2, -1):
+        for i in range(20, 6, -1):
             l = i - 1
             r = i
 
-            circles = cv2.HoughCircles(self.threshed, cv2.HOUGH_GRADIENT, 0.5, minDist=1.7 * l,
-                                       param1=200, param2=1, minRadius=l, maxRadius=r)
+            circles = cv2.HoughCircles(self.threshed, cv2.HOUGH_GRADIENT, 1, minDist=1.7 * l,
+                                       param1=300, param2=4, minRadius=l, maxRadius=r)
             circles = circles[0]
 
-            print("Circle count: {}. r: {}-{}".format(len(circles), l, r))
-            filtered_circle = [(int(circle[0]), int(circle[1]), int(circle[2])) for circle in circles]
+            #print("Circle count: {}. r: {}-{}".format(len(circles), l, r))
+            filtered_circle = [(int(round(circle[0])), int(round(circle[1])), circle[2]) for circle in circles]
+
 
             filtered_circle = [circle for circle in filtered_circle \
-                               if self.is_convex_in_circle(self.threshed, circle[0], circle[1], circle[2])]
+                               if self.all_filters(circle[0], circle[1], int(round(circle[2])))]
 
-            print("After first filter: {}. r: {}-{}".format(len(filtered_circle), l, r))
+            #print("After first filter: {}. r: {}-{}".format(len(filtered_circle), l, r))
 
-            filtered_circle = [circle for circle in filtered_circle \
-                               if self.is_border_white_circle(self.threshed, circle[0], circle[1], circle[2])]
-
-            print("After second filter: {}. r: {}-{}".format(len(filtered_circle), l, r))
+            #print("After second filter: {}. r: {}-{}".format(len(filtered_circle), l, r))
 
             color = get_random_color()
             for circle in filtered_circle:
-                cv2.circle(self.threshed, (circle[0], circle[1]), circle[2], 0, -1)  # fill with 0 because of THRESH_BINARY_INV
-                cv2.circle(self.original_img, (circle[0], circle[1]), circle[2], (255, 255, 255), -1)
-                cv2.circle(self.img_with_circle, (circle[0], circle[1]), circle[2], color, 1)
-                cv2.circle(self.threshed_with_circle, (circle[0], circle[1]), circle[2], color, 1)
+                cv2.circle(self.threshed, (circle[0], circle[1]), int(round(circle[2])), 0, -1)  # fill with 0 because of THRESH_BINARY_INV
+
 
             if self.debug:
                 cv2.imwrite("{}/original_img_{}.jpg".format(self.debug_dir, i), self.original_img)
@@ -158,6 +151,6 @@ class Processor:
                 cv2.imwrite("{}/threshed_with_circle_{}.jpg".format(self.debug_dir, i), self.threshed_with_circle)
                 cv2.imwrite("{}/threshed_{}.jpg".format(self.debug_dir, i), self.threshed)
 
-            result_circles.extend(filtered_circle)
+            result_circles.extend([(x, y, 2 * r / (TARGET_SHAPE[0] / 1.5) * INNER_SHAPE[0] * 0.79) for (x, y, r) in filtered_circle])
 
         return result_circles

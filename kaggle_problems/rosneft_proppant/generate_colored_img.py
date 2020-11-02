@@ -16,7 +16,7 @@ sys.path.insert(0, os.getcwd())
 
 from kaggle_problems.rosneft_proppant.workspace.common import TARGET_SHAPE
 from kaggle_problems.rosneft_proppant.workspace.helpers import get_random_color
-from kaggle_problems.rosneft_proppant.workspace.common import r2prop_size, bins2mm
+from kaggle_problems.rosneft_proppant.workspace.common import r2prop_size, bins2mm, generate_low_high
 from kaggle_problems.rosneft_proppant.RPCC_metric_utils_for_participants import sizes_to_sieves, get_bins_from_granules, sizes_to_sieve_hist
 from pathlib import Path
 import random
@@ -41,6 +41,14 @@ Path(GENERATED_LABELS_DIR).mkdir(exist_ok=True, parents=True)
 # In[4]:
 
 
+# img = np.zeros(shape=(11, 11, 3))
+
+# cv2.imwrite("{}/{}.jpg".format("kaggle_problems/rosneft_proppant/data/colored_circles", '100500_5.jpg'), img)
+
+
+# In[5]:
+
+
 class CircleGetter:
     CIRCLE_DIR = "kaggle_problems/rosneft_proppant/data/colored_circles"
     def __init__(self):
@@ -49,7 +57,7 @@ class CircleGetter:
         all_img = [img for img in os.listdir(self.CIRCLE_DIR) if img.endswith('.jpg')]
         all_img = [cv2.imread("{}/{}".format(self.CIRCLE_DIR, img_name)) for img_name in all_img]
         for img in all_img:
-            if self.is_gray_circle(img):
+            if self.is_gray_circle(img) and ( not img.shape[0] <= 10):
                 continue
             assert(img.shape[0] == img.shape[1])
             r = (img.shape[0] - 1) // 2
@@ -63,7 +71,7 @@ class CircleGetter:
         gr += np.absolute(np.array(image[:, :, 1], dtype=int) - np.array(image[:, :, 2], dtype=int))
         gr += np.absolute(np.array(image[:, :, 2], dtype=int) - np.array(image[:, :, 0], dtype=int))
         
-        return np.percentile(gr, 70) < 200
+        return np.percentile(gr, 70) < 100
     
     def get_circle(self, r):
         cnt = len(self.r2circle[r])
@@ -72,9 +80,12 @@ class CircleGetter:
         return self.r2circle[r][i]
     
     def get_r(self, r_mi, r_ma):
+        r_ma += 1
         r_mi = math.floor(r_mi)
         r_ma = math.ceil(r_ma)
+        
         total = np.sum([len(self.r2circle[r]) for r in range(r_mi, r_ma)])
+       # print([len(self.r2circle[r]) / total for r in range(r_mi, r_ma)])
         res = np.random.choice([r for r in range(r_mi, r_ma)], 1,
               p=[len(self.r2circle[r]) / total for r in range(r_mi, r_ma)])[0]
         return res
@@ -82,7 +93,7 @@ class CircleGetter:
 circleGetter = CircleGetter()
 
 
-# In[5]:
+# In[6]:
 
 
 def in_range(l, s, r):
@@ -120,11 +131,11 @@ def get_masked_img(img, x, y, r):
     return sub_img
 
 
-# In[6]:
+# In[7]:
 
 
 def get_empty_img():
-    img = np.empty(shape=(TARGET_SHAPE[0], TARGET_SHAPE[1], 3), dtype=int)
+    img = np.empty(shape=(int(TARGET_SHAPE[0] / 1.5), int(TARGET_SHAPE[1] / 1.5), 3), dtype=int)
     img[:, :, :] = 0
     return img
 
@@ -136,7 +147,7 @@ def draw_background(img, msk):
     return img
 
 
-# In[7]:
+# In[8]:
 
 
 def generate_low_high(bins_name):
@@ -156,15 +167,48 @@ def generate_low_high(bins_name):
     return bin2low, bin2high
 
 
-# In[8]:
+# In[ ]:
 
 
-bin2mean = {'16': 0.005181, '18': 0.057824, '20': 0.156891, '25': 0.356211, '30': 0.215671, '40': 0.170280}
-bin2std = {'16': 0.001865, '18': 0.121420, '20': 0.190781, '25': 0.143069, '30': 0.090675, '40': 0.078468}
+bin2mean = {
+    "16/20": {
+        "16": 0.008445,
+        "18": 0.345696,
+        "20": 0.608227,
+        "25": 0.035619,
+        "30": 0.001163,
+        "40": 0.000142
+    },
+    "20/40_pdcpd_bash_lab": {
+        "16": 0.004605,
+        "18": 0.007023,
+        "20": 0.077243,
+        "25": 0.412786,
+        "30": 0.253526,
+        "40": 0.200304,
+    },
+}
 
-bin2low, bin2high = generate_low_high(bin2mean.keys())
+bin2std = {
+    "16/20": {
+"16":              0.000700,
+"18":              0.009249,
+"20":              0.008222,
+"25":              0.002565,
+"30":              0.000234,
+"40":              0.000143,
+    },
+    "20/40_pdcpd_bash_lab": {
+"16":              0.001335,
+"18":              0.001203,
+"20":              0.014613,
+"25":              0.050904,
+"30":              0.007153,
+"40":              0.034531,
+    },
+}
 
-bin2normal = {key: (lambda key: float(np.random.normal(bin2mean[key], 2 * bin2std[key], 1)[0])) for key in bin2mean.keys()}
+bin2low, bin2high = generate_low_high(bin2mean["16/20"].keys())
 
 
 # In[ ]:
@@ -173,16 +217,18 @@ bin2normal = {key: (lambda key: float(np.random.normal(bin2mean[key], 2 * bin2st
 
 
 
-# In[9]:
+# In[ ]:
 
 
 print(bin2low, bin2high)
 
 
-# In[10]:
+# In[ ]:
 
 
-def generate_img():
+def generate_img(_mean, _std):
+    bin2normal = {key: (lambda key: float(np.random.normal(_mean[key], 2 * _std[key], 1)[0])) for key in _mean.keys()}
+
     PERSENT_FREE = random.randint(20, 80) / 100
     n = random.randint(2, 10)
     xy_min = [TARGET_SHAPE[0] * 0.2, TARGET_SHAPE[1] * 0.2]
@@ -239,31 +285,36 @@ def generate_img():
     img = draw_background(img, msk).astype(np.uint8)
     
     img = cv2.resize(img, (TARGET_SHAPE[1] // 4, TARGET_SHAPE[0] // 4))
-    img = cv2.resize(img, (TARGET_SHAPE[1], TARGET_SHAPE[0]))
+    img = cv2.resize(img, (int(TARGET_SHAPE[1] / 1.5), int(TARGET_SHAPE[0] / 1.5)))
     return img, filtered_circles
 
 
-# In[11]:
+# In[ ]:
 
 
 result_bins = []
-for i in range(1000):
-    print(i)
-    img, circles = generate_img()
-    prop_sizes = [r2prop_size(r) for (_, _, r) in circles]
-    
-    bins_names = [i for i in bin2low.keys()]
-    bins_mm = [bins2mm[key] for key in bins_names]
-    bins_names += [0]
-    bins_mm += [0]
-    cur_bins = sizes_to_sieve_hist(pd.DataFrame({"prop_size": prop_sizes}), bins_mm, bins_names)
-    cur_bins['ImageId'] = i + 1
-    
-    result_bins.append(cur_bins)
-    cv2.imwrite("{}/{}.jpg".format(GENERATED_IMG_DIR, i + 1), img)
-    
-    generated_train = pd.DataFrame(data=result_bins)
-    generated_train.to_csv(GENERATED_LABELS_DIR + "/generated_colored_train.csv")
+fraction_it = 0
+CNT_IMG = 100
+for fraction in ["16/20", "20/40_pdcpd_bash_lab"]:
+    for i in range(CNT_IMG):
+        print(i)
+        img, circles = generate_img(bin2mean[fraction], bin2std[fraction])
+        prop_sizes = [r2prop_size(r) for (_, _, r) in circles]
+
+        bins_names = [i for i in bin2low.keys()]
+        bins_mm = [bins2mm[key] for key in bins_names]
+        bins_names += [0]
+        bins_mm += [0]
+        cur_bins = sizes_to_sieve_hist(pd.DataFrame({"prop_size": prop_sizes}), bins_mm, bins_names)
+        cur_bins['ImageId'] = i + 1 + fraction_it * CNT_IMG
+        cur_bins['fraction'] = fraction
+
+        result_bins.append(cur_bins)
+        cv2.imwrite("{}/{}.jpg".format(GENERATED_IMG_DIR, i + 1 + fraction_it * CNT_IMG), img)
+
+        generated_train = pd.DataFrame(data=result_bins)
+        generated_train.to_csv(GENERATED_LABELS_DIR + "/generated_colored_train.csv")
+    fraction_it += 1
 
 
 # In[ ]:
@@ -272,13 +323,13 @@ for i in range(1000):
 
 
 
-# In[12]:
+# In[ ]:
 
 
 generated_train.describe()
 
 
-# In[13]:
+# In[ ]:
 
 
 get_ipython().system('jupyter nbconvert --to script kaggle_problems/rosneft_proppant/generate_colored_img.ipynb')

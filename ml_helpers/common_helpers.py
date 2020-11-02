@@ -19,8 +19,12 @@ def display_history_metrics(history, model_name):
     epochs = len(history[keys[0]])
 
     fig, ax = plt.subplots(len(keys), 1, figsize=(12, 5 * len(keys)))
+    if not isinstance(ax, list):
+        ax = [ax]
+
     for i, metric in zip(ax, keys):
         i.plot(history[metric], color='b', label="Training {} for {}".format(metric, model_name))
         i.plot(history["val_{}".format(metric)], color='r', label="Validation {} for {}".format(metric, model_name))
         i.set_xticks(np.arange(1, epochs, 1))
         i.legend(loc="best")
+    plt.show()

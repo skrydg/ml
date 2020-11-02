@@ -140,8 +140,10 @@ def postprocess_dists(true, pred, sieve_mask):
     return true, pred
 
 def calc_chi_square_metric(true_hist, pred_hist, fraction):
-    print(true_hist)
-    print(pred_hist)
+    # print(true_hist)
+    # print(pred_hist)
+    # pred_hist[-10:] = 0
+    # pred_hist[0:7] = 0
     sieve_mask = np.array([1 if x in fraction_sievs[fraction]['all'] else 0 for x in sieves_names])
     true_hist_processed, pred_hist_processed = postprocess_dists(true_hist, pred_hist, sieve_mask)
     return chi_square_metric(true_hist_processed, pred_hist_processed)

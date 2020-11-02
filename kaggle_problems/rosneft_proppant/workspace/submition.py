@@ -1,5 +1,5 @@
 import pandas as pd
-from common import COEF
+from common import COEF, r2prop_size
 import os
 
 class Submition:
@@ -9,7 +9,7 @@ class Submition:
         self.write_header = not os.path.exists(self.filename)
 
     def submit(self, circles):
-        diam = [2 * circle[2] / COEF for circle in circles] # transform radius -> diametr
+        diam = [circle[2] for circle in circles]
         sb = pd.DataFrame(data={
             "ImageId": [self.img_number] * len(diam),
             "prop_size": diam})
